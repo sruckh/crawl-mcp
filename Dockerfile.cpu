@@ -1,0 +1,87 @@
+# CPU-only optimized Dockerfile for Crawl4AI MCP Server
+# Excludes CUDA/GPU dependencies for lightweight local deployment
+
+FROM python:3.11-slim as builder
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy CPU-only requirements and install Python dependencies
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir -r requirements-cpu.txt
+
+# Install crawl4ai without dependencies to avoid PyTorch/CUDA
+RUN pip install --no-cache-dir --no-deps crawl4ai>=0.3.0
+
+# Production stage
+FROM python:3.11-slim
+
+# Install runtime system dependencies (Playwright requirements only)
+RUN apt-get update && apt-get install -y \
+    # Essential Playwright dependencies
+    libnss3 \
+    libnspr4 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libgtk-3-0 \
+    libgbm1 \
+    libxss1 \
+    libgconf-2-4 \
+    libxtst6 \
+    libxrandr2 \
+    libpangocairo-1.0-0 \
+    libatk1.0-0 \
+    libcairo-gobject2 \
+    libgdk-pixbuf2.0-0 \
+    # Basic utilities
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Create non-root user for security
+RUN groupadd --gid 1000 mcpuser && \
+    useradd --uid 1000 --gid mcpuser --shell /bin/bash --create-home mcpuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY . .
+
+# Install Playwright browsers in the virtual environment (Chromium only for efficiency)
+RUN playwright install chromium
+
+# Change ownership to non-root user
+RUN chown -R mcpuser:mcpuser /app /opt/venv
+
+# Switch to non-root user
+USER mcpuser
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV FASTMCP_LOG_LEVEL=INFO
+
+# Disable crawl4ai ML features that require heavy dependencies
+ENV CRAWL4AI_DISABLE_SENTENCE_TRANSFORMERS=true
+ENV CRAWL4AI_DISABLE_TORCH=true
+
+# Health check (lightweight check without ML components)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "from crawl4ai_mcp.server import mcp; print('Health check passed')" || exit 1
+
+# Default command
+CMD ["python", "-m", "crawl4ai_mcp.server"]

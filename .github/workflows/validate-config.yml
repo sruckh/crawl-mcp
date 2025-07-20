@@ -1,0 +1,56 @@
+name: Validate Configuration
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'Dockerfile.runpod'
+      - 'runpod_handler.py'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Validate RunPod handler syntax
+      run: |
+        python -m py_compile runpod_handler.py
+        echo "✅ RunPod handler syntax is valid"
+
+    - name: Validate Dockerfile.runpod
+      run: |
+        docker build -f Dockerfile.runpod -t test-image . --target builder
+        echo "✅ Dockerfile.runpod is valid"
+
+    - name: Check workflow YAML syntax
+      uses: ibiqlik/action-yamllint@v3
+      with:
+        file_or_dir: .github/workflows/
+        config_file: .github/workflows/.yamllint.yml
+        strict: false
+
+    - name: Validate image naming convention
+      run: |
+        if grep -q "gemneye/crawl4ai-runpod-serverless" .github/workflows/build-runpod-docker.yml; then
+          echo "✅ Image naming convention is correct"
+        else
+          echo "❌ Image name should be gemneye/crawl4ai-runpod-serverless"
+          exit 1
+        fi
+
+    - name: Check platform restriction
+      run: |
+        if grep -q "linux/amd64" .github/workflows/build-runpod-docker.yml; then
+          echo "✅ Platform restriction to AMD64/X86_64 is configured"
+        else
+          echo "❌ Platform should be restricted to linux/amd64"
+          exit 1
+        fi

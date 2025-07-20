@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  crawl4ai-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crawl4ai-mcp-server
+    restart: unless-stopped
+    
+    environment:
+      # MCP Server Configuration
+      - FASTMCP_LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      
+      # Optional: Set transport mode (default is STDIO)
+      # - MCP_TRANSPORT=http
+      # - MCP_HOST=0.0.0.0
+      # - MCP_PORT=8000
+      
+      # Optional: LLM API Keys (uncomment and set if needed)
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      # - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      
+      # File processing limits
+      - MAX_FILE_SIZE_MB=100
+      
+      # Performance tuning
+      - MAX_CONCURRENT_REQUESTS=5
+      - CACHE_TTL=900  # 15 minutes
+    
+    # No ports exposed to localhost - only accessible via shared_net
+    expose:
+      - "8000"  # HTTP transport port (if enabled)
+    
+    volumes:
+      # Optional: Mount for persistent cache
+      - crawl4ai_cache:/app/cache
+      # Optional: Mount for logs
+      - crawl4ai_logs:/app/logs
+      # Optional: Mount configuration directory
+      - ./config:/app/config:ro
+    
+    networks:
+      - shared_net
+    
+    # Security context
+    user: "1000:1000"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import asyncio; from crawl4ai_mcp.server import mcp; print('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  shared_net:
+    external: true
+
+volumes:
+  crawl4ai_cache:
+    driver: local
+  crawl4ai_logs:
+    driver: local
