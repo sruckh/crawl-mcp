@@ -1,0 +1,58 @@
+# Git and version control
+.git
+.gitignore
+*.md
+docs/
+examples/
+dxt-packages/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+logs/
+cache/
+temp/
+tmp/
+
+# Test files
+test_*.py
+tests/
+*_test.py
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Environment files (will be provided via compose)
+.env
+.env.*
+
+# Scripts not needed in container
+scripts/
+setup.sh
+setup_windows.bat
+
+# Configuration examples (will mount actual config)
+configs/
+config/claude_desktop_config*.json

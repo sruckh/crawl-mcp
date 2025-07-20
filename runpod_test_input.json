@@ -1,0 +1,11 @@
+{
+    "input": {
+        "operation": "crawl_url",
+        "params": {
+            "url": "https://httpbin.org/html",
+            "generate_markdown": true,
+            "wait_for_js": false,
+            "timeout": 30
+        }
+    }
+}

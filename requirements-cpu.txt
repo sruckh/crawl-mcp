@@ -1,0 +1,60 @@
+# CPU-only optimized requirements for Crawl4AI MCP Server
+# Excludes heavy ML dependencies to reduce image size
+
+# Core MCP and FastMCP
+fastmcp>=0.1.0
+pydantic>=2.0.0
+asyncio
+typing-extensions
+python-dotenv>=1.0.0
+
+# Web crawling essentials (crawl4ai base dependencies without ML)
+aiosqlite~=0.20
+lxml~=5.3
+numpy>=1.26.0,<3
+pillow>=10.4
+playwright>=1.49.0
+requests~=2.26
+beautifulsoup4~=4.12
+tf-playwright-stealth>=1.1.0
+xxhash~=3.4
+rank-bm25~=0.2
+aiofiles>=24.1.0
+snowballstemmer~=2.2
+pyOpenSSL>=24.3.0
+psutil>=6.1.1
+nltk>=3.9.1
+rich>=13.9.4
+cssselect>=1.2.0
+httpx>=0.27.2
+httpx[http2]>=0.27.2
+fake-useragent>=2.0.3
+click>=8.1.7
+pyperclip>=1.8.2
+chardet>=5.2.0
+aiohttp>=3.11.11
+brotli>=1.1.0
+humanize>=4.10.0
+lark>=1.2.2
+
+# CPU-only ML libraries (lightweight alternatives)
+scikit-learn  # For basic ML without torch
+alphashape>=1.3.1
+shapely>=2.0.0
+
+# File processing - explicit dependencies to avoid conflicts
+markitdown>=0.0.1a2
+pdfminer-six>=20250506
+mammoth>=1.9.1
+openpyxl>=3.1.5
+python-pptx>=1.0.2
+xlrd>=2.0.1
+
+# Search and external APIs
+googlesearch-python>=1.3.0
+
+# YouTube transcript extraction (youtube-transcript-api v1.1.0+)
+youtube-transcript-api>=1.1.0
+
+# Note: crawl4ai is NOT included here to avoid its heavy ML dependencies
+# We'll install it with --no-deps and manually specify what we need

@@ -1,0 +1,134 @@
+name: Build and Push RunPod Serverless Container
+
+on:
+  push:
+    branches: [ main, feature/development ]
+    paths:
+      - 'runpod_handler.py'
+      - 'Dockerfile.runpod'
+      - 'requirements.txt'
+      - 'crawl4ai_mcp/**'
+      - '.github/workflows/build-runpod-docker.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'runpod_handler.py'
+      - 'Dockerfile.runpod'
+      - 'requirements.txt'
+      - 'crawl4ai_mcp/**'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Custom tag for the Docker image'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: gemneye/crawl4ai-runpod-serverless
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    # Restrict to AMD64/X86_64 platforms only
+    strategy:
+      matrix:
+        platform: [linux/amd64]
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        platforms: linux/amd64
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.runpod
+        platforms: linux/amd64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+    - name: Update RunPod deployment documentation
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo "## Latest Docker Image" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platform**: AMD64/X86_64 only" >> $GITHUB_STEP_SUMMARY
+        echo "- **Built from**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **RunPod deployment**: Use this image URL in your serverless endpoint configuration" >> $GITHUB_STEP_SUMMARY
+
+    - name: Test container health
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        # Pull the latest image and test basic functionality
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+        # Test that the container starts and basic imports work
+        docker run --rm \
+          --platform linux/amd64 \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          python -c "
+import runpod
+from crawl4ai_mcp.server import mcp
+print('✅ Container health check passed')
+print('✅ RunPod integration ready')
+print('✅ Crawl4AI MCP server available')
+"
+
+    - name: Create deployment summary
+      if: github.event_name == 'release'
+      run: |
+        echo "## 🚀 RunPod Serverless Deployment Ready" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Docker Image" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### RunPod Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "1. Go to [RunPod Serverless Console](https://console.runpod.io/serverless)" >> $GITHUB_STEP_SUMMARY
+        echo "2. Create new endpoint with **CPU-only** workers" >> $GITHUB_STEP_SUMMARY
+        echo "3. Use the Docker image URL above" >> $GITHUB_STEP_SUMMARY
+        echo "4. Configure auto-scaling based on your needs" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Supported Platforms" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ AMD64/X86_64 (Intel/AMD processors)" >> $GITHUB_STEP_SUMMARY
+        echo "- ❌ ARM64 (not supported for RunPod compatibility)" >> $GITHUB_STEP_SUMMARY

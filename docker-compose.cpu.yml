@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  crawl4ai-mcp-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: crawl4ai-mcp-cpu
+    restart: unless-stopped
+    
+    environment:
+      # MCP Server Configuration
+      - FASTMCP_LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      
+      # Disable heavy ML features for CPU-only deployment
+      - CRAWL4AI_DISABLE_SENTENCE_TRANSFORMERS=true
+      - CRAWL4AI_DISABLE_TORCH=true
+      
+      # Optional: Set transport mode (default is STDIO)
+      # - MCP_TRANSPORT=http
+      # - MCP_HOST=0.0.0.0
+      # - MCP_PORT=8000
+      
+      # Optional: LLM API Keys (uncomment and set if needed)
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      
+      # File processing limits
+      - MAX_FILE_SIZE_MB=100
+      
+      # Performance tuning (reduced for CPU-only)
+      - MAX_CONCURRENT_REQUESTS=3
+      - CACHE_TTL=900  # 15 minutes
+    
+    # No ports exposed to localhost - only accessible via shared_net
+    expose:
+      - "8000"  # HTTP transport port (if enabled)
+    
+    volumes:
+      # Persistent cache
+      - crawl4ai_cpu_cache:/app/cache
+      # Logs
+      - crawl4ai_cpu_logs:/app/logs
+      # Optional: Mount configuration directory
+      - ./config:/app/config:ro
+    
+    networks:
+      - shared_net
+    
+    # Security context
+    user: "1000:1000"
+    
+    # Resource limits (reduced for CPU-only workload)
+    deploy:
+      resources:
+        limits:
+          memory: 1G       # Reduced from 2G
+          cpus: '0.5'      # Reduced from 1.0
+        reservations:
+          memory: 256M     # Reduced from 512M
+          cpus: '0.25'     # Reduced from 0.5
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "from crawl4ai_mcp.server import mcp; print('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s    # Reduced from 60s
+
+networks:
+  shared_net:
+    external: true
+
+volumes:
+  crawl4ai_cpu_cache:
+    driver: local
+  crawl4ai_cpu_logs:
+    driver: local
