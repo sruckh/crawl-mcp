@@ -105,13 +105,7 @@ jobs:
         docker run --rm \
           --platform linux/amd64 \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-          python -c "
-import runpod
-from crawl4ai_mcp.server import mcp
-print('✅ Container health check passed')
-print('✅ RunPod integration ready')
-print('✅ Crawl4AI MCP server available')
-"
+          python -c "import runpod; from crawl4ai_mcp.server import mcp; print('✅ Container health check passed'); print('✅ RunPod integration ready'); print('✅ Crawl4AI MCP server available')"
 
     - name: Create deployment summary
       if: github.event_name == 'release'
