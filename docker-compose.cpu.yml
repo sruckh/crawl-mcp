@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   crawl4ai-mcp-cpu:
     build:
@@ -18,10 +16,10 @@ services:
       - CRAWL4AI_DISABLE_SENTENCE_TRANSFORMERS=true
       - CRAWL4AI_DISABLE_TORCH=true
       
-      # Optional: Set transport mode (default is STDIO)
-      # - MCP_TRANSPORT=http
-      # - MCP_HOST=0.0.0.0
-      # - MCP_PORT=8000
+      # HTTP transport for persistent operation
+      - MCP_TRANSPORT=http
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
       
       # Optional: LLM API Keys (uncomment and set if needed)
       # - OPENAI_API_KEY=${OPENAI_API_KEY}

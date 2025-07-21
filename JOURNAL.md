@@ -1,5 +1,28 @@
 # Engineering Journal
 
+## 2025-07-21 07:38
+
+### HTTP Transport Default & crawl4ai 0.7.1 Update
+- **What**: Updated CPU container configuration to use HTTP transport by default and upgraded to crawl4ai 0.7.1
+- **Why**: HTTP transport provides persistent operation for local development, and 0.7.1 includes latest features and bug fixes
+- **How**: Modified Dockerfile.cpu and docker-compose.cpu.yml to enable HTTP mode and specify exact version
+- **Issues**: None - clean implementation
+- **Result**: CPU containers now stay running on port 8000 with latest crawl4ai features
+
+#### Technical Changes:
+- **crawl4ai Version**: Updated from `>=0.3.0` to `==0.7.1` in Dockerfile.cpu
+- **Transport Mode**: Changed from STDIO (exiting immediately) to HTTP (persistent)
+- **Configuration**: Added MCP_TRANSPORT=http, MCP_HOST=0.0.0.0, MCP_PORT=8000 environment variables
+- **Port Exposure**: Container now exposes port 8000 for HTTP access
+
+#### Benefits:
+- **Persistent Operation**: Container stays running instead of exiting immediately
+- **Local Development**: Easy HTTP access at http://localhost:8000
+- **Latest Features**: Access to crawl4ai 0.7.1 improvements and bug fixes
+- **Better UX**: More intuitive for users expecting persistent server behavior
+
+---
+
 ## 2025-07-20 21:30
 
 ### CPU-Only Container Optimization Implementation
@@ -96,4 +119,3 @@
 - **Result**: Documentation framework successfully initialized
 
 ---
-

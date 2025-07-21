@@ -19,7 +19,7 @@ COPY requirements-cpu.txt .
 RUN pip install --no-cache-dir -r requirements-cpu.txt
 
 # Install crawl4ai without dependencies to avoid PyTorch/CUDA
-RUN pip install --no-cache-dir --no-deps crawl4ai>=0.3.0
+RUN pip install --no-cache-dir --no-deps crawl4ai==0.7.1
 
 # Production stage
 FROM python:3.11-slim
