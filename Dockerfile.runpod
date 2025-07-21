@@ -36,7 +36,9 @@ RUN pip install --no-cache-dir runpod
 
 # Copy requirements and install project dependencies
 COPY requirements.txt .
+COPY requirements-runpod.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-runpod.txt
 
 # Install Playwright browsers (only Chromium for efficiency)
 RUN playwright install chromium

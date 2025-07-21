@@ -1,0 +1,6 @@
+{
+  "exclude": ["runpod_handler.py"],
+  "ignore": ["runpod_handler.py"],
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false
+}
