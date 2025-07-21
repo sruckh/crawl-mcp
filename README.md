@@ -92,6 +92,53 @@ sudo apt-get update
 sudo apt-get install libnss3 libnspr4 libasound2 libatk-bridge2.0-0 libdrm2 libgtk-3-0 libgbm1
 ```
 
+## 🐳 Docker Deployment (Recommended)
+
+For production deployments and easy setup, we provide multiple Docker container variants optimized for different use cases:
+
+### Quick Start with Docker
+```bash
+# Create shared network
+docker network create shared_net
+
+# CPU-optimized deployment (recommended for most users)
+docker-compose -f docker-compose.cpu.yml build
+docker-compose -f docker-compose.cpu.yml up -d
+
+# Verify deployment
+docker-compose -f docker-compose.cpu.yml ps
+```
+
+### Container Variants
+
+| Variant | Use Case | Build Time | Image Size | Memory Limit |
+|---------|----------|------------|------------|--------------|
+| **CPU-Optimized** | VPS, local development | 6-9 min | ~1.5-2GB | 1GB |
+| **Lightweight** | Resource-constrained environments | 4-6 min | ~1-1.5GB | 512MB |
+| **Standard** | Full features (may include CUDA) | 8-12 min | ~2-3GB | 2GB |
+| **RunPod Serverless** | Cloud auto-scaling deployment | 6-9 min | ~1.5-2GB | 1GB |
+
+### Docker Features
+- **🔒 Network Isolation**: No localhost exposure, only accessible via `shared_net`
+- **⚡ CPU Optimization**: CUDA-free builds for 50-70% smaller containers
+- **🔄 Auto-scaling**: RunPod serverless deployment with automated CI/CD
+- **📊 Health Monitoring**: Built-in health checks and monitoring
+- **🛡️ Security**: Non-root user, resource limits, safe mode enabled
+
+### Quick Commands
+```bash
+# Build all variants for comparison
+./scripts/build-cpu-containers.sh
+
+# Deploy to RunPod (automated via GitHub Actions)
+# Image: docker.io/gemneye/crawl4ai-runpod-serverless:latest
+
+# Health check
+docker exec crawl4ai-mcp-cpu python -c "from crawl4ai_mcp.server import mcp; print('✅ Healthy')"
+```
+
+For complete Docker documentation, see **[Docker Guide](DOCKER.md)**.
+
 ## 🖥️ Usage
 
 ### Start the MCP Server
@@ -947,4 +994,23 @@ Simply drag and drop the `.dxt` file into Claude Desktop for instant setup.
 
 ## 📚 Additional Documentation
 
-For detailed feature documentation in Japanese, see [`README_ja.md`](README_ja.md).
+### Infrastructure & Deployment
+- **[Docker Guide](DOCKER.md)** - Complete Docker containerization guide with multiple variants
+- **[Architecture](ARCHITECTURE.md)** - Technical architecture, design decisions, and container infrastructure  
+- **[Build & Deployment](BUILD.md)** - Build processes, CI/CD pipeline, and deployment strategies
+- **[Configuration](CONFIG.md)** - Environment variables, Docker settings, and performance tuning
+- **[Deployment Playbook](PLAYBOOKS/DEPLOY.md)** - Production deployment procedures and troubleshooting
+
+### Development & Contributing
+- **[Contributing Guide](CONTRIBUTING.md)** - Docker development workflow and contribution guidelines
+- **[RunPod Deployment](RUNPOD_DEPLOYMENT.md)** - Serverless cloud deployment on RunPod
+- **[GitHub Actions](GITHUB_ACTIONS.md)** - Automated CI/CD pipeline documentation
+
+### API & Integration
+- **[Pure StreamableHTTP](docs/PURE_STREAMABLE_HTTP.md)** - Recommended HTTP transport protocol
+- **[HTTP Server Usage](docs/HTTP_SERVER_USAGE.md)** - HTTP API server configuration  
+- **[Legacy HTTP API](docs/HTTP_API_GUIDE.md)** - Detailed HTTP API documentation
+
+### Localization & Support
+- **[Japanese Documentation](README_ja.md)** - Complete feature documentation in Japanese
+- **[Japanese Troubleshooting](docs/troubleshooting_ja.md)** - Troubleshooting guide in Japanese
