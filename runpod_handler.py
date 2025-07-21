@@ -3,11 +3,20 @@ RunPod Serverless Handler for Crawl4AI MCP Server
 Provides serverless web crawling capabilities via RunPod platform
 """
 
-import runpod
 import asyncio
 import json
 import logging
+import sys
 from typing import Dict, Any, List, Optional
+
+# Import runpod with error handling for local development
+try:
+    import runpod
+    RUNPOD_AVAILABLE = True
+except ImportError:
+    # runpod is not available in local development
+    RUNPOD_AVAILABLE = False
+    print("Warning: runpod module not found. This is expected for local development.")
 
 # Import our MCP server components
 from crawl4ai_mcp.server import (
@@ -27,6 +36,25 @@ from crawl4ai_mcp.server import (
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def run_async_safe(coro):
+    """
+    Safely run an async coroutine in both sync and async contexts.
+    This handles the case where an event loop is already running.
+    """
+    try:
+        # Check if there's already a running event loop
+        try:
+            loop = asyncio.get_running_loop()
+            # If we have a running loop, use it
+            return loop.run_until_complete(coro)
+        except RuntimeError:
+            # No running loop, safe to use asyncio.run
+            return asyncio.run(coro)
+    except Exception as e:
+        # Fallback for any other issues
+        logger.error(f"Error in run_async_safe: {e}")
+        raise
 
 async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -117,7 +145,7 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
             for batch_op in batch_operations:
                 batch_operation = batch_op.get('operation')
                 batch_params = batch_op.get('params', {})
-                result = asyncio.run(handle_crawl_request(batch_operation, batch_params))
+                result = run_async_safe(handle_crawl_request(batch_operation, batch_params))
                 results.append(result)
             
             return {
@@ -127,7 +155,7 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
             }
         
         # Handle single operation
-        result = asyncio.run(handle_crawl_request(operation, params))
+        result = run_async_safe(handle_crawl_request(operation, params))
         return result
         
     except Exception as e:
@@ -199,6 +227,12 @@ EXAMPLE_INPUTS = {
 
 # Start the serverless function when the script is run
 if __name__ == '__main__':
+    if not RUNPOD_AVAILABLE:
+        logger.error("Cannot start RunPod serverless worker: runpod module not available")
+        logger.error("This script is designed to run on RunPod serverless infrastructure")
+        logger.error("For local testing, use: python -c \"import runpod_handler; print(runpod_handler.EXAMPLE_INPUTS)\"")
+        sys.exit(1)
+    
     logger.info("Starting RunPod Crawl4AI Serverless Worker...")
     logger.info("Available operations:")
     for op in EXAMPLE_INPUTS.keys():

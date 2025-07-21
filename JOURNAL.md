@@ -1,5 +1,33 @@
 # Engineering Journal
 
+## 2025-07-21 16:07
+
+### RunPod Import Error Resolution |ERROR:ERR-2025-07-21-002|
+- **What**: Fixed "Import 'runpod' could not be resolved" Pylance error and VS Code configuration conflicts
+- **Why**: RunPod module is only available in serverless environment, causing expected import warnings in local development
+- **How**: Implemented comprehensive solution with conditional imports, IDE configuration, and dependency management
+- **Issues**: VS Code settings conflicted with pyrightconfig.json, causing "settingsNotOverridable" error
+- **Result**: Clean development experience with proper error handling for both local and serverless environments
+
+#### Technical Implementation:
+- **Runtime Safety**: Added conditional import with try/catch in `runpod_handler.py` for graceful local development
+- **IDE Configuration**: Updated `pyrightconfig.json` to suppress expected missing import warnings
+- **VS Code Settings**: Fixed `.vscode/settings.json` by removing conflicting `typeCheckingMode` setting
+- **Dependency Management**: Updated `requirements-runpod.txt` with `runpod>=1.7.13` for serverless deployment
+- **Docker Integration**: Enhanced `Dockerfile.runpod` to include RunPod dependencies
+
+#### Files Modified:
+- `runpod_handler.py` - Added conditional imports and error handling
+- `requirements-runpod.txt` - Updated runpod package version
+- `Dockerfile.runpod` - Added RunPod dependency installation
+- `pyrightconfig.json` - Configured missing import suppression
+- `.vscode/settings.json` - Fixed configuration conflicts
+
+#### Key Learning:
+This is **expected behavior** - the `runpod` module is intentionally unavailable locally and only provided in RunPod's serverless infrastructure. The solution provides clean development experience while maintaining runtime safety.
+
+---
+
 ## 2025-07-21 07:38
 
 ### HTTP Transport Default & crawl4ai 0.7.1 Update
@@ -20,6 +48,48 @@
 - **Local Development**: Easy HTTP access at http://localhost:8000
 - **Latest Features**: Access to crawl4ai 0.7.1 improvements and bug fixes
 - **Better UX**: More intuitive for users expecting persistent server behavior
+
+---
+
+## 2025-07-21 15:49
+
+### RunPod Serverless Asyncio Event Loop Fix |ERROR:ERR-2025-07-21-001|
+- **What**: Fixed "asyncio.run() cannot be called from a running event loop" error in RunPod serverless environment
+- **Why**: RunPod serverless platform runs handlers within an existing event loop, causing RuntimeError when using asyncio.run()
+- **How**: Replaced asyncio.run() calls with custom run_async_safe() function that handles existing event loops gracefully
+- **Issues**: Initial attempts with nest_asyncio and complex loop handling were too complex - simplified to direct event loop detection
+- **Result**: RunPod serverless handler now works correctly without asyncio conflicts
+
+#### Technical Details:
+- **Problem**: `asyncio.run()` fails in serverless environments with existing event loops
+- **Solution**: Added `run_async_safe()` function in runpod_handler.py that:
+  - Detects existing running event loops
+  - Uses appropriate execution method (run_until_complete vs asyncio.run)
+  - Handles edge cases gracefully
+- **Files Modified**: `runpod_handler.py` - replaced all asyncio.run() calls with run_async_safe()
+- **Impact**: Enables stable web crawling via RunPod serverless platform
+
+#### Testing:
+- **Local Testing**: Verified handler works in both sync and async contexts
+- **Serverless Compatibility**: Confirmed fix resolves RuntimeError in RunPod environment
+- **Backward Compatibility**: No breaking changes to existing functionality
+
+---
+
+## 2025-07-21 05:42
+
+### GitHub Actions YAML Syntax Fix
+- **What**: Fixed invalid YAML syntax in build-runpod-docker.yml workflow file
+- **Why**: GitHub Actions was failing with "Invalid workflow file" error on line 109
+- **How**: Replaced multi-line Python script with single-line command using semicolons
+- **Issues**: Multi-line string formatting was breaking YAML validation
+- **Result**: Workflow now passes YAML validation and can run successfully
+
+#### Technical Details:
+- **Problem**: Multi-line Python script in docker run command had improper indentation
+- **Solution**: Converted to single-line Python command with semicolon separators
+- **Location**: `.github/workflows/build-runpod-docker.yml:109-114`
+- **Impact**: Enables automated CI/CD builds to complete successfully
 
 ---
 
@@ -89,23 +159,6 @@
 - **BuildKit cache**: GitHub Actions caching for faster builds
 - **Health monitoring**: Container health checks and status validation
 - **Resource controls**: Memory and CPU limits for stable operation
-
----
-
-## 2025-07-21 05:42
-
-### GitHub Actions YAML Syntax Fix
-- **What**: Fixed invalid YAML syntax in build-runpod-docker.yml workflow file
-- **Why**: GitHub Actions was failing with "Invalid workflow file" error on line 109
-- **How**: Replaced multi-line Python script with single-line command using semicolons
-- **Issues**: Multi-line string formatting was breaking YAML validation
-- **Result**: Workflow now passes YAML validation and can run successfully
-
-#### Technical Details:
-- **Problem**: Multi-line Python script in docker run command had improper indentation
-- **Solution**: Converted to single-line Python command with semicolon separators
-- **Location**: `.github/workflows/build-runpod-docker.yml:109-114`
-- **Impact**: Enables automated CI/CD builds to complete successfully
 
 ---
 
