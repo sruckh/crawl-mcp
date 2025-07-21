@@ -43,16 +43,21 @@ def run_async_safe(coro):
     This handles the case where an event loop is already running.
     """
     try:
-        # Check if there's already a running event loop
+        # Check if we're in a running event loop
         try:
             loop = asyncio.get_running_loop()
-            # If we have a running loop, use it
-            return loop.run_until_complete(coro)
+            # Create a new event loop for this coroutine
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                return new_loop.run_until_complete(coro)
+            finally:
+                new_loop.close()
+                asyncio.set_event_loop(loop)
         except RuntimeError:
             # No running loop, safe to use asyncio.run
             return asyncio.run(coro)
     except Exception as e:
-        # Fallback for any other issues
         logger.error(f"Error in run_async_safe: {e}")
         raise
 
