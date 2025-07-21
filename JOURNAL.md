@@ -93,6 +93,33 @@ This is **expected behavior** - the `runpod` module is intentionally unavailable
 
 ---
 
+## 2025-07-21 18:06
+
+### RunPod Serverless Asyncio Event Loop Fix - Enhanced |ERROR:ERR-2025-07-21-003|
+- **What**: Enhanced the fix for "asyncio.run() cannot be called from a running event loop" error in RunPod serverless environment
+- **Why**: The initial fix was incomplete and the error persisted in certain async contexts
+- **How**: Implemented a more robust `run_async_safe()` function that properly handles existing event loops by creating new event loops when needed
+- **Issues**: Previous approach with `loop.run_until_complete()` still failed in some async contexts
+- **Result**: RunPod serverless handler now works correctly across all async execution contexts
+
+#### Technical Details:
+- **Problem**: `asyncio.run()` fails in serverless environments with existing event loops
+- **Solution**: Enhanced `run_async_safe()` function in runpod_handler.py that:
+  - Detects existing running event loops
+  - Creates new event loop instances when needed
+  - Properly manages event loop lifecycle
+  - Handles edge cases gracefully
+- **Files Modified**: `runpod_handler.py` - replaced async execution logic with robust event loop handling
+- **Impact**: Enables stable web crawling via RunPod serverless platform in all async contexts
+
+#### Testing:
+- **Local Testing**: Verified handler works in both sync and async contexts
+- **Serverless Compatibility**: Confirmed fix resolves RuntimeError in RunPod environment
+- **Backward Compatibility**: No breaking changes to existing functionality
+- **Edge Cases**: Tested with nested async calls and concurrent execution
+
+---
+
 ## 2025-07-20 21:30
 
 ### CPU-Only Container Optimization Implementation
