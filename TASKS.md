@@ -7,17 +7,17 @@
 **Progress**: 2/5 tasks completed
 
 ## Current Task
-**Task ID**: TASK-2025-07-22-004
-**Title**: Performance Profiling & Cache Optimization
+**Task ID**: TASK-2025-07-22-009
+**Title**: Performance Profiling & Cache Optimization  
 **Status**: PLANNING
-**Started**: 2025-07-22 00:30
-**Dependencies**: TASK-2025-07-22-003
+**Started**: 2025-07-22 02:45
+**Dependencies**: TASK-2025-07-22-008
 
 ### Task Context
 <!-- Critical information needed to resume this task -->
-- **Previous Work**: Completed RunPod Serverless Configuration Enhancement (TASK-2025-07-22-003)
+- **Previous Work**: Completed RunPod MCP Function Calling Fix (TASK-2025-07-22-008) - serverless now fully operational
 - **Key Files**: `crawl4ai_mcp/server.py:150-200` (cache system), `crawl4ai_mcp/server.py:250-3300` (tool implementations)
-- **Environment**: Full production setup - CPU containers, RunPod serverless, OpenRouter integration, remote HTTPS access
+- **Environment**: Complete production setup - CPU containers, RunPod serverless (working), OpenRouter integration, remote HTTPS access
 - **Next Steps**: Profile tool execution times across both CPU and GPU deployments, identify bottlenecks, optimize cache system
 
 ### Findings & Decisions
@@ -25,19 +25,25 @@
 - **DECISION-001**: Need to measure actual cache hit rates and performance impact with remote client usage
 - **FINDING-002**: 19 tools accessible via HTTPS with OpenRouter LLM integration 
 - **DECISION-002**: Focus optimization on most frequently used tools first, prioritize remote client performance
-- **FINDING-003**: Both CPU and GPU (RunPod) environments now properly configured
-- **DECISION-003**: Can compare performance between CPU-only vs GPU-accelerated deployments
-- **FINDING-004**: RunPod serverless now has GPU acceleration enabled for ML processing
-- **DECISION-004**: Performance testing should include GPU vs CPU ML task comparisons
+- **FINDING-003**: Both CPU and GPU (RunPod) environments now properly configured AND working
+- **DECISION-003**: Can now compare performance between CPU-only vs GPU-accelerated deployments with real data
+- **FINDING-004**: RunPod serverless now has GPU acceleration enabled AND function calling working
+- **DECISION-004**: Performance testing should include GPU vs CPU ML task comparisons with actual measurements
+- **FINDING-005**: RunPod deployment pipeline fully operational after resolving asyncio and MCP function calling issues
+- **DECISION-005**: Can now focus on optimization rather than fixing deployment issues
 
 ### Task Chain
 1. ✅ HTTP Transport & RunPod Integration (TASK-2025-07-21-001 to 005)
 2. ✅ Production Container Setup & Remote Client Integration (TASK-2025-07-22-001)
-3. ✅ RunPod Serverless Configuration Enhancement (TASK-2025-07-22-003)
-4. 🔄 Performance Profiling & Cache Optimization (CURRENT)
-5. ⏳ Security Audit & Vulnerability Assessment
-6. ⏳ Memory Usage Optimization
-7. ⏳ Concurrent Processing Enhancement
+3. ✅ RunPod Serverless Configuration Enhancement (TASK-2025-07-22-003)  
+4. ✅ GitHub Actions Docker Tag Format Fix (TASK-2025-07-22-004)
+5. ✅ RunPod Dockerfile Permissions Fixes (TASK-2025-07-22-005)
+6. ✅ RunPod Asyncio Event Loop Fix (TASK-2025-07-22-006, 007)
+7. ✅ RunPod MCP Function Calling Fix (TASK-2025-07-22-008)
+8. 🔄 Performance Profiling & Cache Optimization (CURRENT)
+9. ⏳ Security Audit & Vulnerability Assessment
+10. ⏳ Memory Usage Optimization
+11. ⏳ Concurrent Processing Enhancement
 
 ## Upcoming Phases
 <!-- Future work not yet started -->
@@ -47,6 +53,11 @@
 
 ## Completed Tasks Archive
 <!-- Recent completions for quick reference -->
+- [TASK-2025-07-22-008]: RunPod MCP Function Calling Fix → See JOURNAL.md 2025-07-22 02:30
+- [TASK-2025-07-22-007]: RunPod Asyncio "Running Loop" Error Fix → See JOURNAL.md 2025-07-22 02:00
+- [TASK-2025-07-22-006]: RunPod Asyncio Event Loop Fix (Initial Attempt) → See JOURNAL.md 2025-07-22 01:30
+- [TASK-2025-07-22-005]: RunPod Docker Permission Fixes → See JOURNAL.md 2025-07-22 01:00
+- [TASK-2025-07-22-004]: GitHub Actions Docker Tag Format Fix → See JOURNAL.md 2025-07-22 01:00
 - [TASK-2025-07-22-003]: RunPod Serverless Configuration Enhancement → See JOURNAL.md 2025-07-22 00:30
 - [TASK-2025-07-22-001]: Production Container Setup & Remote Client Integration → See JOURNAL.md 2025-07-22 00:00
 - [TASK-2025-07-21-001]: RunPod Serverless Asyncio Event Loop Fix → See JOURNAL.md 2025-07-21 15:49

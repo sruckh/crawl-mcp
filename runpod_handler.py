@@ -18,20 +18,8 @@ except ImportError:
     RUNPOD_AVAILABLE = False
     print("Warning: runpod module not found. This is expected for local development.")
 
-# Import our MCP server components
-from crawl4ai_mcp.server import (
-    crawl_url,
-    deep_crawl_site,
-    intelligent_extract,
-    extract_entities,
-    extract_structured_data,
-    process_file,
-    extract_youtube_transcript,
-    search_google,
-    search_and_crawl,
-    batch_crawl,
-    crawl_url_with_fallback
-)
+# Import MCP server module to access the underlying functions
+import crawl4ai_mcp.server as mcp_server
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -104,33 +92,130 @@ def run_async_safe(coro):
 
 async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Handle different crawling operations based on the operation type
+    Handle different crawling operations by calling the underlying MCP functions properly
     """
     try:
-        # Map operations to their corresponding functions
-        operations = {
-            'crawl_url': crawl_url,
-            'deep_crawl_site': deep_crawl_site,
-            'intelligent_extract': intelligent_extract,
-            'extract_entities': extract_entities,
-            'extract_structured_data': extract_structured_data,
-            'process_file': process_file,
-            'extract_youtube_transcript': extract_youtube_transcript,
-            'search_google': search_google,
-            'search_and_crawl': search_and_crawl,
-            'batch_crawl': batch_crawl,
-            'crawl_url_with_fallback': crawl_url_with_fallback
-        }
+        logger.info(f"Executing operation: {operation} with params: {params}")
         
-        if operation not in operations:
+        # Import the request/response classes we need
+        from crawl4ai_mcp.server import (
+            CrawlRequest, FileProcessRequest, 
+            GoogleSearchRequest, GoogleBatchSearchRequest
+        )
+        
+        # Handle different operations with proper parameter construction
+        if operation == 'crawl_url':
+            request = CrawlRequest(**params)
+            # Get the underlying function from the decorated tool
+            tool_func = mcp_server.crawl_url
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                # Try to call it directly (might work with some MCP implementations)
+                result = await tool_func(request)
+                
+        elif operation == 'crawl_url_with_fallback':
+            request = CrawlRequest(**params)
+            tool_func = mcp_server.crawl_url_with_fallback
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                result = await tool_func(request)
+                
+        elif operation == 'process_file':
+            request = FileProcessRequest(**params)
+            tool_func = mcp_server.process_file
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                result = await tool_func(request)
+                
+        elif operation == 'search_google':
+            request = GoogleSearchRequest(**params)
+            tool_func = mcp_server.search_google
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                result = await tool_func(request)
+                
+        elif operation == 'batch_search_google':
+            request = GoogleBatchSearchRequest(**params) 
+            tool_func = mcp_server.batch_search_google
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                result = await tool_func(request)
+                
+        elif operation == 'extract_structured_data':
+            # This one uses StructuredExtractionRequest
+            from crawl4ai_mcp.server import StructuredExtractionRequest
+            request = StructuredExtractionRequest(**params)
+            tool_func = mcp_server.extract_structured_data
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(request)
+            else:
+                result = await tool_func(request)
+                
+        # For operations that take simple parameters, call directly
+        elif operation == 'deep_crawl_site':
+            tool_func = mcp_server.deep_crawl_site
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(**params)
+            else:
+                result = await tool_func(**params)
+                
+        elif operation == 'intelligent_extract':
+            tool_func = mcp_server.intelligent_extract
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(**params)
+            else:
+                result = await tool_func(**params)
+                
+        elif operation == 'extract_entities':
+            tool_func = mcp_server.extract_entities
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(**params)
+            else:
+                result = await tool_func(**params)
+                
+        elif operation == 'extract_youtube_transcript':
+            tool_func = mcp_server.extract_youtube_transcript
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(params)  # This one takes Dict[str, Any]
+            else:
+                result = await tool_func(params)
+                
+        elif operation == 'batch_extract_youtube_transcripts':
+            tool_func = mcp_server.batch_extract_youtube_transcripts
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(params)  # This one takes Dict[str, Any]
+            else:
+                result = await tool_func(params)
+                
+        elif operation == 'batch_crawl':
+            tool_func = mcp_server.batch_crawl
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(**params)
+            else:
+                result = await tool_func(**params)
+                
+        elif operation == 'search_and_crawl':
+            tool_func = mcp_server.search_and_crawl
+            if hasattr(tool_func, 'func'):
+                result = await tool_func.func(**params)
+            else:
+                result = await tool_func(**params)
+                
+        else:
             return {
                 'error': f'Unknown operation: {operation}',
-                'available_operations': list(operations.keys())
+                'available_operations': [
+                    'crawl_url', 'crawl_url_with_fallback', 'deep_crawl_site',
+                    'intelligent_extract', 'extract_entities', 'extract_structured_data',
+                    'process_file', 'extract_youtube_transcript', 'batch_extract_youtube_transcripts',
+                    'search_google', 'batch_search_google', 'search_and_crawl', 'batch_crawl'
+                ]
             }
-        
-        # Execute the operation
-        logger.info(f"Executing operation: {operation} with params: {params}")
-        result = await operations[operation](**params)
         
         return {
             'operation': operation,
@@ -140,6 +225,8 @@ async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[s
         
     except Exception as e:
         logger.error(f"Error executing {operation}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        logger.error(f"Parameters received: {params}")
         return {
             'operation': operation,
             'success': False,

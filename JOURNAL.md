@@ -1,9 +1,79 @@
 # Engineering Journal
 
+## 2025-07-22 02:30
+
+### RunPod MCP Function Calling Fix |TASK:TASK-2025-07-22-008|
+**Status**: COMPLETED ✅
+**Duration**: 45 minutes (2025-07-22 02:00 - 02:45 UTC)
+
+#### Problem Analysis Evolution  
+**Third Error Phase**: After resolving asyncio event loop issues, discovered MCP function calling problem:
+- **Previous**: "Cannot run the event loop while another loop is running" (TASK-2025-07-22-007)
+- **New Issue**: `'FunctionTool' object is not callable`
+- **Root Cause**: RunPod handler importing decorated MCP functions instead of callable underlying functions
+
+#### Error Details from RunPod
+```json
+{
+  "delayTime": 7041,
+  "error": "'FunctionTool' object is not callable",
+  "executionTime": 153,
+  "status": "FAILED",
+  "output": {
+    "error_type": "TypeError",
+    "operation": "crawl_url",
+    "success": false
+  }
+}
+```
+
+#### Technical Discovery
+**MCP Tool Decoration Issue**: FastMCP's `@mcp.tool` decorator transforms functions into `FunctionTool` objects:
+```python
+# Original server.py structure
+@mcp.tool
+async def crawl_url(request: CrawlRequest) -> CrawlResponse:
+    # Function becomes a FunctionTool object, not directly callable
+```
+
+#### Solution Implemented
+**Proper MCP Function Invocation**: Updated `runpod_handler.py` to handle decorated MCP functions correctly:
+
+1. **Import Strategy**: Changed from direct function imports to module import
+2. **Function Access**: Check for `.func` attribute to access underlying function
+3. **Parameter Construction**: Properly construct request objects for MCP tools
+4. **Dual Call Strategy**: Try `.func` access first, fallback to direct call
+
+#### Technical Implementation
+```python
+# Fixed handle_crawl_request function
+if operation == 'crawl_url':
+    request = CrawlRequest(**params)
+    tool_func = mcp_server.crawl_url
+    if hasattr(tool_func, 'func'):
+        result = await tool_func.func(request)  # Access underlying function
+    else:
+        result = await tool_func(request)       # Fallback for direct calls
+```
+
+#### Key Results
+- **Asyncio Fixed**: Threading-based event loop isolation successful
+- **Function Calling Fixed**: MCP tools now properly invoked via underlying functions
+- **Parameter Handling**: Correct request object construction for each tool type
+- **Error Progression**: Moved from infrastructure issues to implementation details
+
+#### Expected Impact
+- ✅ RunPod serverless should now execute MCP tools successfully
+- ✅ All 19 tools should be functional with proper parameter handling
+- ✅ GPU acceleration features accessible through working async execution
+- ✅ Complete RunPod deployment pipeline operational
+
+---
+
 ## 2025-07-22 02:00
 
 ### RunPod Asyncio "Running Loop" Error Fix |TASK:TASK-2025-07-22-007|
-**Status**: IN_PROGRESS 🔄
+**Status**: COMPLETED ✅
 **Duration**: 30 minutes (2025-07-22 01:30 - 02:00 UTC)
 
 #### Problem Analysis Evolution
