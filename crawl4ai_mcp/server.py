@@ -3348,6 +3348,7 @@ PDFの内容を理解しやすい形式で提示してください。"""
 
 def main():
     """Main entry point for the MCP server."""
+    import os
     import sys
     
     if len(sys.argv) > 1 and sys.argv[1] == "--help":
@@ -3356,11 +3357,12 @@ def main():
         print("Transports: stdio (default), streamable-http, sse")
         return
     
-    # Parse command line arguments
-    transport = "stdio"
-    host = "127.0.0.1"
-    port = 8000
+    # Parse environment variables first, then command line arguments
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    host = os.getenv("MCP_HOST", "127.0.0.1")
+    port = int(os.getenv("MCP_PORT", "8000"))
     
+    # Parse command line arguments (override environment variables)
     args = sys.argv[1:]
     i = 0
     while i < len(args):
@@ -3380,8 +3382,10 @@ def main():
     if transport == "stdio":
         mcp.run()
     elif transport == "streamable-http" or transport == "http":
+        print(f"Starting HTTP transport server on {host}:{port}", file=sys.stderr)
         mcp.run(transport="streamable-http", host=host, port=port)
     elif transport == "sse":
+        print(f"Starting SSE transport server on {host}:{port}", file=sys.stderr)
         mcp.run(transport="sse", host=host, port=port)
     else:
         print(f"Unknown transport: {transport}")

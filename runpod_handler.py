@@ -106,105 +106,52 @@ async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[s
         # Handle different operations with proper parameter construction
         if operation == 'crawl_url':
             request = CrawlRequest(**params)
-            # Get the underlying function from the decorated tool
-            tool_func = mcp_server.crawl_url
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                # Try to call it directly (might work with some MCP implementations)
-                result = await tool_func(request)
+            # FastMCP decorated functions are directly callable
+            result = await mcp_server.crawl_url(request)
                 
         elif operation == 'crawl_url_with_fallback':
             request = CrawlRequest(**params)
-            tool_func = mcp_server.crawl_url_with_fallback
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                result = await tool_func(request)
+            result = await mcp_server.crawl_url_with_fallback(request)
                 
         elif operation == 'process_file':
             request = FileProcessRequest(**params)
-            tool_func = mcp_server.process_file
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                result = await tool_func(request)
+            result = await mcp_server.process_file(request)
                 
         elif operation == 'search_google':
             request = GoogleSearchRequest(**params)
-            tool_func = mcp_server.search_google
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                result = await tool_func(request)
+            result = await mcp_server.search_google(request)
                 
         elif operation == 'batch_search_google':
             request = GoogleBatchSearchRequest(**params) 
-            tool_func = mcp_server.batch_search_google
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                result = await tool_func(request)
+            result = await mcp_server.batch_search_google(request)
                 
         elif operation == 'extract_structured_data':
             # This one uses StructuredExtractionRequest
             from crawl4ai_mcp.server import StructuredExtractionRequest
             request = StructuredExtractionRequest(**params)
-            tool_func = mcp_server.extract_structured_data
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(request)
-            else:
-                result = await tool_func(request)
+            result = await mcp_server.extract_structured_data(request)
                 
         # For operations that take simple parameters, call directly
         elif operation == 'deep_crawl_site':
-            tool_func = mcp_server.deep_crawl_site
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(**params)
-            else:
-                result = await tool_func(**params)
+            result = await mcp_server.deep_crawl_site(**params)
                 
         elif operation == 'intelligent_extract':
-            tool_func = mcp_server.intelligent_extract
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(**params)
-            else:
-                result = await tool_func(**params)
+            result = await mcp_server.intelligent_extract(**params)
                 
         elif operation == 'extract_entities':
-            tool_func = mcp_server.extract_entities
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(**params)
-            else:
-                result = await tool_func(**params)
+            result = await mcp_server.extract_entities(**params)
                 
         elif operation == 'extract_youtube_transcript':
-            tool_func = mcp_server.extract_youtube_transcript
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(params)  # This one takes Dict[str, Any]
-            else:
-                result = await tool_func(params)
+            result = await mcp_server.extract_youtube_transcript(params)  # This one takes Dict[str, Any]
                 
         elif operation == 'batch_extract_youtube_transcripts':
-            tool_func = mcp_server.batch_extract_youtube_transcripts
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(params)  # This one takes Dict[str, Any]
-            else:
-                result = await tool_func(params)
+            result = await mcp_server.batch_extract_youtube_transcripts(params)  # This one takes Dict[str, Any]
                 
         elif operation == 'batch_crawl':
-            tool_func = mcp_server.batch_crawl
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(**params)
-            else:
-                result = await tool_func(**params)
+            result = await mcp_server.batch_crawl(**params)
                 
         elif operation == 'search_and_crawl':
-            tool_func = mcp_server.search_and_crawl
-            if hasattr(tool_func, 'func'):
-                result = await tool_func.func(**params)
-            else:
-                result = await tool_func(**params)
+            result = await mcp_server.search_and_crawl(**params)
                 
         else:
             return {
