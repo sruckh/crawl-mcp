@@ -106,52 +106,115 @@ async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[s
         # Handle different operations with proper parameter construction
         if operation == 'crawl_url':
             request = CrawlRequest(**params)
-            # FastMCP decorated functions are directly callable
-            result = await mcp_server.crawl_url(request)
+            
+            # Diagnostic logging to understand the function type
+            crawl_func = mcp_server.crawl_url
+            logger.info(f"Function type: {type(crawl_func)}")
+            logger.info(f"Function callable: {callable(crawl_func)}")
+            logger.info(f"Function dir: {[attr for attr in dir(crawl_func) if not attr.startswith('_')]}")
+            
+            # Check if it's a FastMCP FunctionTool that needs special handling
+            if hasattr(crawl_func, 'func'):
+                logger.info("Function has .func attribute, using it")
+                result = await crawl_func.func(request)
+            elif hasattr(crawl_func, '__call__'):
+                logger.info("Function is callable, calling directly")
+                result = await crawl_func(request)
+            else:
+                logger.error(f"Function is not callable and has no .func attribute: {type(crawl_func)}")
+                raise TypeError(f"'{type(crawl_func).__name__}' object is not callable")
                 
         elif operation == 'crawl_url_with_fallback':
             request = CrawlRequest(**params)
-            result = await mcp_server.crawl_url_with_fallback(request)
+            crawl_func = mcp_server.crawl_url_with_fallback
+            if hasattr(crawl_func, 'func'):
+                result = await crawl_func.func(request)
+            else:
+                result = await crawl_func(request)
                 
         elif operation == 'process_file':
             request = FileProcessRequest(**params)
-            result = await mcp_server.process_file(request)
+            process_func = mcp_server.process_file
+            if hasattr(process_func, 'func'):
+                result = await process_func.func(request)
+            else:
+                result = await process_func(request)
                 
         elif operation == 'search_google':
             request = GoogleSearchRequest(**params)
-            result = await mcp_server.search_google(request)
+            search_func = mcp_server.search_google
+            if hasattr(search_func, 'func'):
+                result = await search_func.func(request)
+            else:
+                result = await search_func(request)
                 
         elif operation == 'batch_search_google':
-            request = GoogleBatchSearchRequest(**params) 
-            result = await mcp_server.batch_search_google(request)
+            request = GoogleBatchSearchRequest(**params)
+            batch_func = mcp_server.batch_search_google
+            if hasattr(batch_func, 'func'):
+                result = await batch_func.func(request)
+            else:
+                result = await batch_func(request)
                 
         elif operation == 'extract_structured_data':
             # This one uses StructuredExtractionRequest
             from crawl4ai_mcp.server import StructuredExtractionRequest
             request = StructuredExtractionRequest(**params)
-            result = await mcp_server.extract_structured_data(request)
+            extract_func = mcp_server.extract_structured_data
+            if hasattr(extract_func, 'func'):
+                result = await extract_func.func(request)
+            else:
+                result = await extract_func(request)
                 
-        # For operations that take simple parameters, call directly
+        # For operations that take simple parameters, call with fallback
         elif operation == 'deep_crawl_site':
-            result = await mcp_server.deep_crawl_site(**params)
+            deep_func = mcp_server.deep_crawl_site
+            if hasattr(deep_func, 'func'):
+                result = await deep_func.func(**params)
+            else:
+                result = await deep_func(**params)
                 
         elif operation == 'intelligent_extract':
-            result = await mcp_server.intelligent_extract(**params)
+            intel_func = mcp_server.intelligent_extract
+            if hasattr(intel_func, 'func'):
+                result = await intel_func.func(**params)
+            else:
+                result = await intel_func(**params)
                 
         elif operation == 'extract_entities':
-            result = await mcp_server.extract_entities(**params)
+            entities_func = mcp_server.extract_entities
+            if hasattr(entities_func, 'func'):
+                result = await entities_func.func(**params)
+            else:
+                result = await entities_func(**params)
                 
         elif operation == 'extract_youtube_transcript':
-            result = await mcp_server.extract_youtube_transcript(params)  # This one takes Dict[str, Any]
+            youtube_func = mcp_server.extract_youtube_transcript
+            if hasattr(youtube_func, 'func'):
+                result = await youtube_func.func(params)
+            else:
+                result = await youtube_func(params)
                 
         elif operation == 'batch_extract_youtube_transcripts':
-            result = await mcp_server.batch_extract_youtube_transcripts(params)  # This one takes Dict[str, Any]
+            batch_youtube_func = mcp_server.batch_extract_youtube_transcripts
+            if hasattr(batch_youtube_func, 'func'):
+                result = await batch_youtube_func.func(params)
+            else:
+                result = await batch_youtube_func(params)
                 
         elif operation == 'batch_crawl':
-            result = await mcp_server.batch_crawl(**params)
+            batch_func = mcp_server.batch_crawl
+            if hasattr(batch_func, 'func'):
+                result = await batch_func.func(**params)
+            else:
+                result = await batch_func(**params)
                 
         elif operation == 'search_and_crawl':
-            result = await mcp_server.search_and_crawl(**params)
+            search_crawl_func = mcp_server.search_and_crawl
+            if hasattr(search_crawl_func, 'func'):
+                result = await search_crawl_func.func(**params)
+            else:
+                result = await search_crawl_func(**params)
                 
         else:
             return {

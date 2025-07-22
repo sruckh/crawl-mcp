@@ -1,5 +1,14 @@
 # Engineering Journal
 
+## 2025-07-22 06:30
+
+### RunPod 'FunctionTool object is not callable' - Enhanced Diagnostic Fix
+- **What**: Fixed recurring RunPod function calling error with comprehensive fallback pattern and diagnostic logging
+- **Why**: Despite multiple "fixes", the error kept occurring in RunPod serverless environment due to different module loading behavior
+- **How**: Added robust .func attribute checking with diagnostic logging across all 13 MCP operations in runpod_handler.py
+- **Issues**: Previous fixes assumed direct calling would work, but RunPod environment has different FastMCP initialization patterns
+- **Result**: Enhanced diagnostic solution should handle both direct callable and .func attribute access patterns, with detailed logging for troubleshooting
+
 ## 2025-07-22 03:15
 
 ### RunPod MCP Function Calling Issue Resolution (Final Fix) |TASK:TASK-2025-07-22-010|
