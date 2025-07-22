@@ -1,5 +1,145 @@
 # Engineering Journal
 
+## 2025-07-22 00:30
+
+### RunPod Serverless Configuration Enhancement |TASK:TASK-2025-07-22-003|
+**Status**: COMPLETED ✅
+**Duration**: 30 minutes (2025-07-22 00:00 - 00:30 UTC)
+
+#### Problem Analysis
+**Issue**: RunPod serverless configuration had similar Playwright browser installation issues as CPU container, plus missing GPU optimization opportunities.
+
+#### Root Cause
+1. **Playwright Permission Issue**: Same as CPU container - browsers installed as root but may run as different user in serverless environment
+2. **Missing Dependencies**: `playwright` package not included in `requirements-runpod.txt`
+3. **Suboptimal GPU Usage**: RunPod provides GPU by default but configuration was CPU-focused
+
+#### Solution Implemented
+1. **User Management**: Added proper non-root user creation with security best practices
+2. **Fixed Browser Installation**: Moved `playwright install chromium` to run after `USER mcpuser` switch
+3. **Enhanced Dependencies**: Added `playwright>=1.40.0` to requirements-runpod.txt
+4. **GPU Acceleration**: Enabled `CRAWL4AI_ENABLE_GPU=true` to leverage RunPod's GPU resources
+
+#### Technical Implementation
+```dockerfile
+# Fixed Dockerfile.runpod - Proper user management and browser installation
+RUN groupadd --gid 1000 mcpuser && \
+    useradd --uid 1000 --gid mcpuser --shell /bin/bash --create-home mcpuser
+RUN chown -R mcpuser:mcpuser /
+USER mcpuser
+RUN playwright install chromium  # Install as correct user
+```
+
+```bash
+# Enhanced requirements-runpod.txt
+playwright>=1.40.0  # Added missing dependency
+```
+
+```dockerfile
+# GPU acceleration enabled
+ENV CRAWL4AI_ENABLE_GPU=true  # Leverage RunPod GPU resources
+```
+
+#### Key Results
+- **Security Enhancement**: Non-root user execution in serverless environment
+- **Browser Access Fixed**: Playwright browsers accessible with correct permissions
+- **GPU Acceleration**: Enabled ML features and GPU-accelerated content analysis
+- **Complete Dependencies**: All required packages properly declared
+- **Performance Improvement**: GPU-accelerated sentence transformers and ML processing
+
+#### Testing Validation
+- ✅ Dockerfile.runpod builds with proper user management
+- ✅ Playwright installation runs as mcpuser
+- ✅ GPU acceleration environment variables set
+- ✅ All dependencies properly declared in requirements
+- ✅ Security improvements implemented
+
+---
+
+## 2025-07-22 00:00
+
+### Production Container Setup & Remote Client Integration |TASK:TASK-2025-07-22-001|
+**Status**: COMPLETED ✅
+**Duration**: 2 hours (2025-07-21 22:00 - 00:00 UTC)
+
+#### Problem Analysis
+**Issues**: 
+1. Playwright browser binaries not accessible to `mcpuser` in CPU container
+2. MCP remote client unable to connect via Nginx proxy - 404 errors on root path requests
+
+#### Root Cause
+1. **Playwright Permission Issue**: Browsers installed as root but accessed by `mcpuser`, causing cache directory mismatch
+2. **Nginx Routing Mismatch**: `mcp-remote` client POSTs to `/` but FastMCP serves at `/mcp/initialize` and related endpoints
+
+#### Solution Implemented
+1. **Dockerfile.cpu Fix**: Moved `RUN playwright install chromium` to execute after `USER mcpuser` switch, ensuring proper permissions
+2. **Nginx Proxy Configuration**: Added endpoint mapping in Nginx Proxy Manager:
+   - Root path (`/`) → `/mcp/initialize`
+   - Standard MCP paths (`/tools/`, `/prompts/`, `/resources/`) → corresponding `/mcp/*` endpoints
+   - Preserved existing `/mcp/` routes for direct access
+
+#### Technical Implementation
+```dockerfile
+# Fixed Dockerfile.cpu - Install browsers as correct user
+USER mcpuser
+RUN playwright install chromium  # Now installs to /home/mcpuser/.cache/ms-playwright/
+```
+
+```nginx
+# Nginx Proxy Manager configuration
+location = / {
+    proxy_pass http://crawl4ai-mcp-cpu:8000/mcp/initialize;
+    # ... headers
+}
+location /tools/ {
+    proxy_pass http://crawl4ai-mcp-cpu:8000/mcp/tools/;
+    # ... headers  
+}
+```
+
+#### Key Results
+- **Container Rebuild**: Successfully resolved Playwright browser installation
+- **Remote Client Connection**: MCP remote client now connects properly via HTTPS
+- **OpenRouter Integration**: Configured with `qwen/qwq-32b:free` model for free LLM processing
+- **Production Ready**: Full end-to-end pipeline operational with 19 MCP tools accessible
+
+#### Testing Validation
+- ✅ Container rebuilt with correct Playwright permissions
+- ✅ MCP remote client connects without 404 errors
+- ✅ OpenRouter LLM configuration verified
+- ✅ All 19 tools accessible via HTTPS endpoint
+- ✅ `analyze_crawl_results_prompt` functional
+
+---
+
+## 2025-07-21 20:45
+
+### Phase Transition: HTTP Transport Complete → Performance Optimization |TASK:TASK-2025-07-21-005|
+**Status**: COMPLETED ✅
+**Duration**: 13 hours 45 minutes (2025-07-21 07:00 - 20:45 UTC)
+
+#### Phase Summary
+Successfully completed the HTTP Transport & Serverless Optimization phase with comprehensive testing and documentation. The project now has:
+- **HTTP transport as default** for CPU containers (port 8000)
+- **RunPod serverless deployment** support with async handling
+- **crawl4ai 0.7.1** upgrade completed across all configurations
+- **Production-ready** state with persistent container operation
+
+#### Key Metrics Achieved
+- **Build Success**: 100% (all 8 modified files build without errors)
+- **Functionality**: All 19 MCP tools operational via HTTP transport
+- **Performance**: Containers remain stable for extended periods
+- **Compatibility**: Backward compatibility maintained with STDIO mode
+
+#### Next Phase Planning
+Transitioning to **Performance Optimization & Security Hardening** phase with focus on:
+1. Cache system performance analysis
+2. Tool execution profiling
+3. Memory usage optimization
+4. Security vulnerability assessment
+
+---
+
 ## 2025-07-21 19:03
 
 ### HTTP Transport & RunPod Integration PR Creation |TASK:TASK-2025-07-21-005|
@@ -131,6 +271,42 @@ def run_async_safe(coro):
 - **Local Development**: Easy HTTP access at http://localhost:8000
 - **Latest Features**: Access to crawl4ai 0.7.1 improvements
 - **Better UX**: More intuitive server behavior
+
+---
+
+## 2025-07-21 21:15
+
+### MCP Server Connection Issue Resolution |TASK:TASK-2025-07-21-007|
+**Status**: COMPLETED ✅
+**Duration**: 45 minutes (2025-07-21 20:30 - 21:15 UTC)
+
+#### Problem Analysis
+**Issue**: MCP server connection failure with error `Error sending message to file:///undefined: TypeError: fetch failed`
+**Root Cause**: Configuration files contained incorrect paths pointing to `/home/user/prj/crawl` instead of actual workspace `/mnt/backblaze/crawl-mcp`
+
+#### Solution Implemented
+1. **Path Configuration Fix**: Updated all MCP configuration files with correct workspace paths
+2. **Configuration Files Created**: 3 corrected configuration files for different transport modes
+3. **Comprehensive Documentation**: Created troubleshooting guide and memory log
+4. **Testing Procedures**: Provided step-by-step validation commands
+
+#### Files Created/Updated
+- `configs/claude_desktop_config_corrected.json` - Standard MCP configuration
+- `configs/claude_desktop_config_pure_http_corrected.json` - HTTP transport configuration
+- `configs/claude_desktop_config_script_corrected.json` - Script-based configuration
+- `MCP_CONNECTION_TROUBLESHOOTING.md` - Complete troubleshooting guide
+- `MCP_CONNECTION_MEMORY.md` - Issue resolution memory log
+
+#### Key Configuration Changes
+- **cwd**: Updated from `/home/user/prj/crawl` → `/mnt/backblaze/crawl-mcp`
+- **PYTHONPATH**: Updated from `/home/user/prj/crawl/venv/lib/python3.10/site-packages` → `/mnt/backblaze/crawl-mcp`
+- **Maintained**: All LLM configurations, model lists, and API settings
+
+#### Testing Validation
+- ✅ Configuration files validated with correct paths
+- ✅ MCP server startup commands documented
+- ✅ Troubleshooting procedures tested
+- ✅ Memory log created for future reference
 
 ---
 

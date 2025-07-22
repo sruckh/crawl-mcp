@@ -40,14 +40,24 @@ COPY requirements-runpod.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r requirements-runpod.txt
 
-# Install Playwright browsers (only Chromium for efficiency)
-RUN playwright install chromium
-
-# Copy the entire project
+# Copy the entire project first
 COPY . .
 
 # Copy RunPod handler
 COPY runpod_handler.py /
+
+# Create non-root user for security
+RUN groupadd --gid 1000 mcpuser && \
+    useradd --uid 1000 --gid mcpuser --shell /bin/bash --create-home mcpuser
+
+# Change ownership to non-root user
+RUN chown -R mcpuser:mcpuser /
+
+# Switch to non-root user before installing browsers
+USER mcpuser
+
+# Install Playwright browsers as the mcpuser (Chromium only for efficiency)
+RUN playwright install chromium
 
 # Create test input file for local testing
 RUN echo '{"input": {"operation": "crawl_url", "params": {"url": "https://httpbin.org/html", "generate_markdown": true}}}' > test_input.json
@@ -56,6 +66,9 @@ RUN echo '{"input": {"operation": "crawl_url", "params": {"url": "https://httpbi
 ENV PYTHONPATH=/
 ENV PYTHONUNBUFFERED=1
 ENV FASTMCP_LOG_LEVEL=INFO
+
+# Enable GPU acceleration for serverless (RunPod provides GPU by default)
+ENV CRAWL4AI_ENABLE_GPU=true
 
 # Health check (optional for RunPod)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
