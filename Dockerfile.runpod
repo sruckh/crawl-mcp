@@ -62,8 +62,8 @@ USER mcpuser
 # Install Playwright browsers as the mcpuser (Chromium only for efficiency)
 RUN playwright install chromium
 
-# Create test input file for local testing
-RUN echo '{"input": {"operation": "crawl_url", "params": {"url": "https://httpbin.org/html", "generate_markdown": true}}}' > test_input.json
+# Create test input file for local testing in user's home directory
+RUN echo '{"input": {"operation": "crawl_url", "params": {"url": "https://httpbin.org/html", "generate_markdown": true}}}' > /home/mcpuser/test_input.json
 
 # Set environment variables for RunPod
 ENV PYTHONPATH=/
