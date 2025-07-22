@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "crawl4ai": {
+      "command": "python",
+      "args": ["-m", "crawl4ai_mcp.server"],
+      "cwd": "/mnt/backblaze/crawl-mcp",
+      "env": {
+        "PYTHONPATH": "/mnt/backblaze/crawl-mcp"
+      }
+    }
+  }
+}

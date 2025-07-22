@@ -61,14 +61,14 @@ WORKDIR /app
 # Copy application code
 COPY . .
 
-# Install Playwright browsers in the virtual environment (Chromium only for efficiency)
-RUN playwright install chromium
-
 # Change ownership to non-root user
 RUN chown -R mcpuser:mcpuser /app /opt/venv
 
 # Switch to non-root user
 USER mcpuser
+
+# Install Playwright browsers as the mcpuser (Chromium only for efficiency)
+RUN playwright install chromium
 
 # Set environment variables
 ENV PYTHONPATH=/app
@@ -83,5 +83,9 @@ ENV CRAWL4AI_DISABLE_TORCH=true
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "from crawl4ai_mcp.server import mcp; print('Health check passed')" || exit 1
 
-# Default command
+# Default command - use HTTP transport for persistent operation
+ENV MCP_TRANSPORT=http
+ENV MCP_HOST=0.0.0.0
+ENV MCP_PORT=8000
+
 CMD ["python", "-m", "crawl4ai_mcp.server"]
