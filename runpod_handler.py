@@ -39,26 +39,36 @@ logger = logging.getLogger(__name__)
 
 def run_async_safe(coro):
     """
-    Safely run an async coroutine in both sync and async contexts.
-    This handles the case where an event loop is already running.
+    Safely run an async coroutine in RunPod serverless thread context.
+    RunPod runs handlers in ThreadPoolExecutor threads without event loops.
     """
     try:
-        # Check if we're in a running event loop
+        # First, try to get the current event loop
         try:
             loop = asyncio.get_running_loop()
-            # Create a new event loop for this coroutine
-            new_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(new_loop)
-            try:
-                return new_loop.run_until_complete(coro)
-            finally:
-                new_loop.close()
-                asyncio.set_event_loop(loop)
+            # If we get here, there's a loop but it might not be running in this thread
+            # This is common in RunPod threads - create a new loop for this thread
+            logger.info("Detected event loop in thread, creating new loop for RunPod execution")
         except RuntimeError:
-            # No running loop, safe to use asyncio.run
-            return asyncio.run(coro)
+            # No event loop in current thread - this is expected for RunPod
+            logger.info("No event loop detected, creating new loop for RunPod execution")
+        
+        # Always create a fresh event loop for the thread
+        # This avoids conflicts with any existing loops
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        
+        try:
+            # Run the coroutine in the new loop
+            return new_loop.run_until_complete(coro)
+        finally:
+            # Clean up the loop when done
+            new_loop.close()
+            # Don't restore the old loop - let the thread manage its own state
+            
     except Exception as e:
         logger.error(f"Error in run_async_safe: {e}")
+        logger.error(f"Coroutine type: {type(coro)}")
         raise
 
 async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[str, Any]:
