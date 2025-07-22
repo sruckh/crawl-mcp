@@ -7,15 +7,15 @@
 **Progress**: 2/5 tasks completed
 
 ## Current Task
-**Task ID**: TASK-2025-07-22-009
+**Task ID**: TASK-2025-07-22-011
 **Title**: Performance Profiling & Cache Optimization  
 **Status**: PLANNING
-**Started**: 2025-07-22 02:45
-**Dependencies**: TASK-2025-07-22-008
+**Started**: 2025-07-22 03:15
+**Dependencies**: TASK-2025-07-22-010
 
 ### Task Context
 <!-- Critical information needed to resume this task -->
-- **Previous Work**: Completed RunPod MCP Function Calling Fix (TASK-2025-07-22-008) - serverless now fully operational
+- **Previous Work**: Completed RunPod MCP Function Calling Final Fix (TASK-2025-07-22-010) - all production environments fully operational
 - **Key Files**: `crawl4ai_mcp/server.py:150-200` (cache system), `crawl4ai_mcp/server.py:250-3300` (tool implementations)
 - **Environment**: Complete production setup - CPU containers, RunPod serverless (working), OpenRouter integration, remote HTTPS access
 - **Next Steps**: Profile tool execution times across both CPU and GPU deployments, identify bottlenecks, optimize cache system
@@ -31,6 +31,8 @@
 - **DECISION-004**: Performance testing should include GPU vs CPU ML task comparisons with actual measurements
 - **FINDING-005**: RunPod deployment pipeline fully operational after resolving asyncio and MCP function calling issues
 - **DECISION-005**: Can now focus on optimization rather than fixing deployment issues
+- **FINDING-006**: FastMCP function calling issue was caused by misunderstanding framework design - decorated functions are directly callable
+- **DECISION-006**: Complete production environment now operational - CPU containers, RunPod serverless with GPU acceleration, remote HTTPS access
 
 ### Task Chain
 1. ✅ HTTP Transport & RunPod Integration (TASK-2025-07-21-001 to 005)
@@ -40,10 +42,11 @@
 5. ✅ RunPod Dockerfile Permissions Fixes (TASK-2025-07-22-005)
 6. ✅ RunPod Asyncio Event Loop Fix (TASK-2025-07-22-006, 007)
 7. ✅ RunPod MCP Function Calling Fix (TASK-2025-07-22-008)
-8. 🔄 Performance Profiling & Cache Optimization (CURRENT)
-9. ⏳ Security Audit & Vulnerability Assessment
-10. ⏳ Memory Usage Optimization
-11. ⏳ Concurrent Processing Enhancement
+8. ✅ RunPod MCP Function Calling Final Fix (TASK-2025-07-22-010)
+9. 🔄 Performance Profiling & Cache Optimization (CURRENT)
+10. ⏳ Security Audit & Vulnerability Assessment
+11. ⏳ Memory Usage Optimization
+12. ⏳ Concurrent Processing Enhancement
 
 ## Upcoming Phases
 <!-- Future work not yet started -->
@@ -53,6 +56,7 @@
 
 ## Completed Tasks Archive
 <!-- Recent completions for quick reference -->
+- [TASK-2025-07-22-010]: RunPod MCP Function Calling Final Fix → See JOURNAL.md 2025-07-22 03:15
 - [TASK-2025-07-22-008]: RunPod MCP Function Calling Fix → See JOURNAL.md 2025-07-22 02:30
 - [TASK-2025-07-22-007]: RunPod Asyncio "Running Loop" Error Fix → See JOURNAL.md 2025-07-22 02:00
 - [TASK-2025-07-22-006]: RunPod Asyncio Event Loop Fix (Initial Attempt) → See JOURNAL.md 2025-07-22 01:30

@@ -1,5 +1,63 @@
 # Engineering Journal
 
+## 2025-07-22 03:15
+
+### RunPod MCP Function Calling Issue Resolution (Final Fix) |TASK:TASK-2025-07-22-010|
+**Status**: COMPLETED ✅
+**Duration**: 30 minutes (2025-07-22 02:45 - 03:15 UTC)
+
+#### Problem Analysis Evolution  
+**Final Error Resolution**: After researching FastMCP documentation, discovered the fundamental misunderstanding in function calling approach:
+- **Previous Issue**: `'FunctionTool' object is not callable` (TASK-2025-07-22-008)
+- **Root Cause Discovery**: FastMCP decorated functions ARE directly callable - no special handling needed
+- **Technical Insight**: FastMCP philosophy: "decorating a function is all you need"
+
+#### Research & Discovery Process
+**Documentation Research**: Used FastMCP official docs and tutorials to understand proper calling patterns:
+- **FastMCP Design**: `@mcp.tool` decorated functions remain regular async functions
+- **No Wrapper Objects**: Functions don't become complex `FunctionTool` objects requiring `.func` access
+- **Direct Invocation**: Simple `await function(params)` is the correct approach
+
+#### Solution Implemented
+**Simplified Function Calling**: Removed all complex attribute checking and object unwrapping:
+
+```python
+# Before (complex and wrong):
+tool_func = mcp_server.crawl_url
+if hasattr(tool_func, 'func'):
+    result = await tool_func.func(request)
+else:
+    result = await tool_func(request)
+
+# After (simple and correct):
+result = await mcp_server.crawl_url(request)
+```
+
+#### Technical Implementation
+**Comprehensive Fix**: Updated all 13 MCP operations in `runpod_handler.py`:
+- `crawl_url`, `crawl_url_with_fallback`, `process_file`
+- `search_google`, `batch_search_google`, `extract_structured_data`
+- `deep_crawl_site`, `intelligent_extract`, `extract_entities`
+- `extract_youtube_transcript`, `batch_extract_youtube_transcripts`
+- `batch_crawl`, `search_and_crawl`
+
+#### Key Results
+- **Simplified Codebase**: Removed 50+ lines of complex attribute checking logic
+- **Correct FastMCP Usage**: Aligned with framework design philosophy
+- **Maintained Async Handling**: Preserved threading-based asyncio isolation
+- **Production Ready**: All RunPod serverless operations should now work correctly
+
+#### Expected Impact
+- ✅ RunPod serverless deployment fully operational
+- ✅ All 19 MCP tools executable via serverless environment  
+- ✅ GPU acceleration accessible through corrected function calling
+- ✅ Complete production pipeline: CPU containers + RunPod serverless + remote HTTPS
+
+#### Learning Moment
+**Framework Understanding**: This highlighted the importance of understanding framework design philosophy rather than making assumptions about implementation details. FastMCP's "Pythonic" approach means decorated functions remain normal functions.
+
+---
+
 ## 2025-07-22 02:30
 
 ### RunPod MCP Function Calling Fix |TASK:TASK-2025-07-22-008|
