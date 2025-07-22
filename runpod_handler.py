@@ -39,36 +39,67 @@ logger = logging.getLogger(__name__)
 
 def run_async_safe(coro):
     """
-    Safely run an async coroutine in RunPod serverless thread context.
-    RunPod runs handlers in ThreadPoolExecutor threads without event loops.
+    Safely run an async coroutine in RunPod serverless environment.
+    Handles both cases: running event loop and no event loop.
     """
     try:
-        # First, try to get the current event loop
+        # Check if there's already a running event loop
         try:
             loop = asyncio.get_running_loop()
-            # If we get here, there's a loop but it might not be running in this thread
-            # This is common in RunPod threads - create a new loop for this thread
-            logger.info("Detected event loop in thread, creating new loop for RunPod execution")
-        except RuntimeError:
-            # No event loop in current thread - this is expected for RunPod
-            logger.info("No event loop detected, creating new loop for RunPod execution")
-        
-        # Always create a fresh event loop for the thread
-        # This avoids conflicts with any existing loops
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        
-        try:
-            # Run the coroutine in the new loop
-            return new_loop.run_until_complete(coro)
-        finally:
-            # Clean up the loop when done
-            new_loop.close()
-            # Don't restore the old loop - let the thread manage its own state
+            # There's a running loop - we need to schedule the coroutine
+            logger.info("Running event loop detected, scheduling coroutine as task")
             
+            # Create a concurrent.futures.Future to get the result
+            import concurrent.futures
+            import threading
+            
+            # Create a future to hold the result
+            future = concurrent.futures.Future()
+            
+            def run_in_thread():
+                """Run the coroutine in a separate thread with its own event loop"""
+                try:
+                    # Create a new event loop for this thread
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    
+                    try:
+                        # Run the coroutine
+                        result = new_loop.run_until_complete(coro)
+                        future.set_result(result)
+                    finally:
+                        new_loop.close()
+                        
+                except Exception as e:
+                    future.set_exception(e)
+            
+            # Run in a separate thread to avoid loop conflicts
+            thread = threading.Thread(target=run_in_thread)
+            thread.start()
+            thread.join()
+            
+            # Get the result (this will raise any exception that occurred)
+            return future.result()
+            
+        except RuntimeError:
+            # No running loop - safe to create and use our own
+            logger.info("No running event loop, creating new one")
+            
+            # Create a fresh event loop
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            
+            try:
+                # Run the coroutine in the new loop
+                return new_loop.run_until_complete(coro)
+            finally:
+                # Clean up the loop when done
+                new_loop.close()
+                
     except Exception as e:
         logger.error(f"Error in run_async_safe: {e}")
         logger.error(f"Coroutine type: {type(coro)}")
+        logger.error(f"Exception type: {type(e).__name__}")
         raise
 
 async def handle_crawl_request(operation: str, params: Dict[str, Any]) -> Dict[str, Any]:

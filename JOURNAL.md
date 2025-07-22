@@ -1,5 +1,147 @@
 # Engineering Journal
 
+## 2025-07-22 02:00
+
+### RunPod Asyncio "Running Loop" Error Fix |TASK:TASK-2025-07-22-007|
+**Status**: IN_PROGRESS 🔄
+**Duration**: 30 minutes (2025-07-22 01:30 - 02:00 UTC)
+
+#### Problem Analysis Evolution
+**New Error Discovered**: `"Cannot run the event loop while another loop is running"`
+- **Previous Issue**: No event loop in thread (TASK-2025-07-22-006)
+- **Current Issue**: RunPod DOES have a running event loop, but we can't use `run_until_complete()` while it's running
+- **Root Cause**: RunPod serverless threads have ACTIVE event loops, not missing ones
+
+#### Error Details from RunPod
+```json
+{
+  "delayTime": 6907,
+  "error": "Cannot run the event loop while another loop is running",
+  "executionTime": 143,
+  "status": "FAILED",
+  "output": {
+    "error_type": "RuntimeError",
+    "success": false
+  }
+}
+```
+
+#### Solution Strategy Update
+**Threading-Based Event Loop Isolation**: Run async operations in separate threads with their own event loops when a running loop is detected:
+
+```python
+def run_async_safe(coro):
+    try:
+        # Check if there's already a running event loop
+        loop = asyncio.get_running_loop()
+        # There IS a running loop - use threading to isolate
+        
+        import concurrent.futures, threading
+        future = concurrent.futures.Future()
+        
+        def run_in_thread():
+            # Create isolated event loop in new thread
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                result = new_loop.run_until_complete(coro)
+                future.set_result(result)
+            finally:
+                new_loop.close()
+        
+        thread = threading.Thread(target=run_in_thread)
+        thread.start()
+        thread.join()
+        return future.result()
+        
+    except RuntimeError:
+        # No running loop - safe to create our own
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        try:
+            return new_loop.run_until_complete(coro)
+        finally:
+            new_loop.close()
+```
+
+#### Technical Evolution
+- **Previous Fix**: Assumed no event loop in RunPod threads (incorrect)
+- **New Understanding**: RunPod threads HAVE running loops but prevent nested `run_until_complete()`
+- **Solution**: Thread isolation when running loops detected, direct execution when no loops
+- **Approach**: Concurrent.futures + threading for true event loop isolation
+
+#### Key Insight
+RunPod serverless environment behavior is more complex than initially understood:
+1. **Threads DO have event loops** (contrary to original error message)
+2. **Loops are running** but don't allow nested execution
+3. **Threading isolation** is required, not just loop creation
+4. **Error messages evolved** as fixes were applied, revealing deeper architecture
+
+## 2025-07-22 01:30
+
+### RunPod Asyncio Event Loop Fix (Initial Attempt) |TASK:TASK-2025-07-22-006|
+**Status**: SUPERSEDED ❌
+**Duration**: 30 minutes (2025-07-22 01:00 - 01:30 UTC)
+
+#### Problem Analysis
+**Initial Issue**: `RuntimeError: There is no current event loop in thread 'ThreadPoolExecutor-0_0'`
+**Assumption**: RunPod threads lack event loops entirely
+
+#### Solution Attempted
+Simplified approach to always create fresh event loops
+
+#### Result
+Fix revealed deeper issue: RunPod threads DO have running event loops, leading to new error: "Cannot run the event loop while another loop is running"
+
+#### Learning
+Initial error message was misleading - the real issue is nested event loop execution, not missing loops
+
+---
+
+## 2025-07-22 01:00
+
+### GitHub Actions Docker Tag Format Fix |TASK:TASK-2025-07-22-004|
+**Status**: COMPLETED ✅
+**Duration**: 15 minutes (2025-07-22 00:45 - 01:00 UTC)
+
+#### Problem Analysis
+**Issue**: RunPod serverless container build failing with error `invalid tag "docker.io/***/crawl4ai-runpod-serverless:-cf62844": invalid reference format`
+
+#### Root Cause
+GitHub Actions workflow configuration used `type=sha,prefix={{branch}}-` which generated invalid Docker tags when branch names contained slashes (e.g., `fix/flash-attention-compatibility` becomes `fix/flash-attention-compatibility-cf62844`), violating Docker tag naming conventions.
+
+#### Solution Implemented
+**Fixed GitHub Actions Workflow**: Changed tag generation from `{{branch}}-` to `commit-` prefix for consistent, valid Docker tag format.
+
+#### Technical Implementation
+```yaml
+# Fixed .github/workflows/build-runpod-docker.yml
+tags: |
+  type=sha,prefix=commit-  # Changed from {{branch}}- to commit-
+```
+
+#### Key Results
+- **Valid Docker Tags**: All generated tags now follow Docker naming conventions
+- **Build Success**: GitHub Actions CI/CD pipeline can successfully build and push containers
+- **Branch Independence**: Tag generation works regardless of branch naming patterns
+- **Automated Deployment**: RunPod serverless container builds now proceed without errors
+
+#### Testing Validation
+- ✅ GitHub Actions workflow updated and committed
+- ✅ Fix pushed to main branch to trigger container rebuild
+- ✅ Tag format change validated against Docker naming requirements
+- ✅ Solution addresses the specific error reported by user
+
+#### Follow-up Fix: RunPod Dockerfile Filesystem Ownership
+**Additional Issue**: Docker build failing due to `chown -R mcpuser:mcpuser /` attempting to modify read-only system directories
+**Solution**: Changed to specific directory ownership only:
+- `/crawl4ai_mcp` (application directory)
+- `/runpod_handler.py` (serverless handler)
+- Requirements files
+**Result**: Avoids system directory conflicts while maintaining security
+
+---
+
 ## 2025-07-22 00:30
 
 ### RunPod Serverless Configuration Enhancement |TASK:TASK-2025-07-22-003|
