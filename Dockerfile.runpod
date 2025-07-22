@@ -50,8 +50,11 @@ COPY runpod_handler.py /
 RUN groupadd --gid 1000 mcpuser && \
     useradd --uid 1000 --gid mcpuser --shell /bin/bash --create-home mcpuser
 
-# Change ownership to non-root user
-RUN chown -R mcpuser:mcpuser /
+# Change ownership of application directories only (not entire filesystem)
+RUN chown -R mcpuser:mcpuser /crawl4ai_mcp && \
+    chown mcpuser:mcpuser /runpod_handler.py && \
+    chown mcpuser:mcpuser /requirements.txt && \
+    chown mcpuser:mcpuser /requirements-runpod.txt
 
 # Switch to non-root user before installing browsers
 USER mcpuser
